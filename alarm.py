@@ -9,7 +9,7 @@ from info import *
 if __name__ == '__main__':
 	date_str = sys.argv[2]
 	time_str = sys.argv[3]
-	datetime_obj = datetime.strptime(date_str + ' ' + time_str + ' EST', '%Y-%m-%d %H:%M %Z')
+	datetime_obj = datetime.strptime(date_str + ' ' + time_str + ' -0500', '%Y-%m-%d %H:%M %z')
 	
 	t = time.mktime(datetime_obj.timetuple()) + datetime_obj.microsecond / 1E6
 	now = time.mktime(datetime.now().timetuple()) + datetime.now().microsecond / 1E6
