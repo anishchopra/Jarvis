@@ -75,6 +75,7 @@ def fan(request):
 	entities = request['entities']
 
 	on = first_entity_value(entities, 'on_off')
+	print('fan should be %s' % on)
 
 	if not on:
 		respond(request['session_id'], "I am sorry, I do not understand - %s" % request['text'])
@@ -83,6 +84,9 @@ def fan(request):
 
 	# My room is the default location
 	place = first_entity_value(entities, 'place') or 'my room'
+
+	for fan in FANS[place]:
+		os.system('wemo switch "%s" %s &' % (fan, on))
 
 	response_place = place.replace('my', 'your')
 
@@ -205,7 +209,11 @@ def scene(request):
 					"http://192.168.0.31/api/NCsuCpKqtu348SbK5dyyStFqhtVtxyC4lYL5juzO/lights/%d/state/" % light_id, 
 					data=light_data)
 
-		# TODO: handle 'fan'
+		if 'fan' in place_info:
+			on = place_info['fan']['on']
+			for fan in FANS[place]:
+				os.system('wemo switch "%s" %s' % (fan, 'on' if on else 'off'))
+
 		# TODO: handle 'alarm'
 
 	return context

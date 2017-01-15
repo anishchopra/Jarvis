@@ -1,5 +1,6 @@
 SUPPORTED_SCENES = set(['bed', 'day', 'sex'])
 LIGHTS = {"my room": [1,2]}
+FANS = {"my room": ["WeMo Switch"]}
 
 SCENES = {
 	"bed": {
