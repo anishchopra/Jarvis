@@ -86,7 +86,7 @@ def fan(request):
 	place = first_entity_value(entities, 'place') or 'my room'
 
 	for fan in FANS[place]:
-		os.system('wemo switch "%s" %s &' % (fan, on))
+		os.system('python2 wemo.py %s %s &' % (fan, on))
 
 	response_place = place.replace('my', 'your')
 
@@ -212,7 +212,7 @@ def scene(request):
 		if 'fan' in place_info:
 			on = place_info['fan']['on']
 			for fan in FANS[place]:
-				os.system('wemo switch "%s" %s' % (fan, 'on' if on else 'off'))
+				os.system('python2 wemo.py %s %s &' % (fan, 'on' if on else 'off'))
 
 		# TODO: handle 'alarm'
 
