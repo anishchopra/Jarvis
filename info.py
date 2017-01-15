@@ -31,7 +31,7 @@ SCENES = {
 				"bri": 50
 			},
 			"fan": {
-				"off": True
+				"on": True
 			}
 		}
 	}
