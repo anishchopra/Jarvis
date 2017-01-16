@@ -10,7 +10,7 @@ from info import *
 
 def snooze(signum, stack):
 	print('snoozing')
-	time.sleep(10)
+	time.sleep(540) # 9 minute snooze
 	print('done snoozing')
 	respond(sender, "Wake up!!! What would you like to do?", [("Snooze", time_str), ("Stop", time_str)])
 
