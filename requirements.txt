@@ -9,6 +9,7 @@ itsdangerous==0.24
 Jinja2==2.8.1
 MarkupSafe==0.23
 ouimeaux==0.8
+pygame==1.9.2
 python-dateutil==1.5
 PyYAML==3.12
 requests==2.12.4

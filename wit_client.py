@@ -8,14 +8,12 @@ from datetime import datetime
 import subprocess
 from functools import cmp_to_key
 import signal
+import glob
 
 from info import *
 
 with open('access_token', 'r') as f:
 	access_token = f.read().strip()
-
-def respond(sender, message):
-	os.system('node respond.js %s %s' % (sender, message))
 
 def first_entity_value(entities, entity):
     if entity not in entities:
@@ -97,28 +95,25 @@ def fan(request):
 def alarm(request):
 	context = request['context']
 	entities = request['entities']
-	print('in alarm')
 
 	on = first_entity_value(entities, 'on_off')
 	datetime_str = first_entity_value(entities, 'datetime')
 	list_val = first_entity_value(entities, 'list')
 
-	print(entities)
-
-	alarms = {}
-	if os.path.isfile(ALARM_FILE):
-		with open(ALARM_FILE, 'r') as f:
-			for line in f:
-				parts = line.strip().split(' ')
-				alarms[parts[0]] = parts[1]
-
 	if not on or not datetime_str:
 		if list_val:
-			print(alarms)
-			if len(alarms) == 1:
-				respond(request['session_id'], "You have an alarm set for %s" % next(iter(alarms)))
-			elif len(alarms) > 1:
-				alarm_times = list(alarms.keys())
+			alarms = glob.glob('alarm_*.txt')
+
+			if len(alarms) == 0:
+				respond(request['session_id'], "You do not have any alarms set")
+			elif len(alarms) == 1:
+				a = alarms[0].split('alarm_')[1].split('.txt')[0]
+				respond(request['session_id'], "You have an alarm set for %s" % a)
+			else:
+				alarm_strs = []
+				for a in alarms:
+					alarm_strs.append(a.split('alarm_')[1].split('.txt')[0])
+
 				def cmp(a,b):
 					hour_a = int(a.split(':')[0])
 					minute_a = int(a.split(':')[1])
@@ -137,45 +132,40 @@ def alarm(request):
 						else:
 							return 0
 
-				alarm_times.sort(key=cmp_to_key(cmp))
-				respond(request['session_id'], "You have alarms set for %s" % ', '.join(alarm_times))
-			else:
-				respond(request['session_id'], "You do not have any alarms set")
+				alarm_strs.sort(key=cmp_to_key(cmp))
+				
+				respond(request['sesssion_id'], "You have alarms set for %s" % ', '.join(alarm_strs))
 		else:
 			respond(request['session_id'], "I am sorry, I do not understand - %s" % request['text'])
 
 		return context
 
-	date = datetime_str.split('T')[0]
-	time = datetime_str.split('T')[1].split('.')[0][:-3]
+	date_str = datetime_str.split('T')[0]
+	time_str = datetime_str.split('T')[1].split('.')[0][:-3]
 
-	print(date)
-	print(time)
+	print(date_str)
+	print(time_str)
 
-	datetime_total = date + ' ' + time
+	datetime_total = date_str + ' ' + time_str
 
-	if on == 'on':
-		if time in alarms:
-			respond(request['session_id'], "You already have an alarm set for %s" % time)
+	filename = 'alarm_%s.txt' % time_str
+
+	if on=='on':
+		if os.path.isfile(filename):
+			respond(request['session_id'], "You already have an alarm set for %s" % time_str)
 		else:
-			respond(request['session_id'], "Okay, creating an alarm for %s" % time)
-			print('python alarm.py %s %s &' % (request['session_id'], datetime_total))
-			proc = subprocess.Popen('python alarm.py %s %s &' % (request['session_id'], datetime_total), shell=True)
+			os.system('python3 new_alarm.py %s %s %s &' % (request['session_id'], date_str, time_str))
+			respond(request['session_id'], "Okay, I have set an alarm for %s" % time_str)
 
-			with open(ALARM_FILE, 'a') as f:
-				f.write('%s %d\n' % (time, proc.pid))
-
-	else:
-		if time in alarms:
-			respond(request['session_id'], "Okay, turning off your %s alarm" % time)
-			pid = alarms[time]
-			os.kill(int(pid)+1, signal.SIGTERM)
-			alarms.pop(time)
-			with open(ALARM_FILE, 'w') as f:
-				for time in alarms:
-					f.write("%s %s\n" % (time, alarms[time]))
+	elif on=='off':
+		if os.path.isfile(filename):
+			with open(filename, 'r') as f:
+				pid = f.read()
+				os.system('kill %s' % pid)
+			os.remove(filename)
+			respond(request['session_id'], "Okay, I have turned off your %s alarm" % time_str)
 		else:
-			respond(request['session_id'], "You do not have an alarm set for %s" % time)
+			respond(request['session_id'], "You do not have an alarm set for %s" % time_str)
 
 	return context
 
@@ -218,6 +208,28 @@ def scene(request):
 
 	return context
 
+def handle_quick_reply(sender, message, payload):
+	if message == 'Stop':
+		filename = 'alarm_%s.txt' % payload
+		if os.path.isfile(filename):
+			with open(filename, 'r') as f:
+				pid = f.read()
+				os.system('kill %s' % pid)
+			os.remove(filename)
+
+			for fan in FANS['my room']:
+				os.system('python2 wemo.py %s %s &' % (fan, 'off'))
+
+				respond(sender, "Okay, I have turned off your %s alarm" % payload)
+	elif message == 'Snooze':
+		filename = 'alarm_%s.txt' % payload
+		if os.path.isfile(filename):
+			with open(filename, 'r') as f:
+				pid = f.read()
+				os.kill(int(pid), signal.SIGUSR1)
+
+				respond(sender, "Okay, I have snoozed your %s alarm" % payload)
+
 actions = {
 	'send': send,
 	'light': light,
@@ -229,11 +241,12 @@ actions = {
 client = Wit(access_token=access_token, actions=actions)
 
 if __name__ == '__main__':
-	print('doing this')
 	sender = sys.argv[1]
-	print('here')
-	message = ' '.join(sys.argv[2:])
-	print('aslkdfj')
-	print(message)
-	client.run_actions(sender, message)
 
+	message = ' '.join(sys.argv[2:-1])
+	quick_reply_payload = sys.argv[-1]
+
+	if quick_reply_payload == 'none':
+		client.run_actions(sender, message)
+	else:
+		handle_quick_reply(sender, message, quick_reply_payload)

@@ -1,3 +1,5 @@
+import os
+
 SUPPORTED_SCENES = set(['bed', 'day', 'sex'])
 LIGHTS = {"my room": [1,2]}
 FANS = {"my room": ["192.168.0.37"]}
@@ -38,3 +40,10 @@ SCENES = {
 }
 
 ALARM_FILE = 'alarms.txt'
+
+def respond(sender, message, quick_replies=[]):
+	qr_str = ""
+	for text,payload in quick_replies:
+		qr_str += text + ' ' + payload + ' '
+	print('node respond.js %s %s %s %s &' % (sender, len(quick_replies), qr_str, message))
+	os.system('node respond.js %s %s %s %s &' % (sender, len(quick_replies), qr_str, message))

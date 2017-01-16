@@ -9,11 +9,21 @@ var db = admin.database();
 var messageRef = db.ref('messages')
 
 messageRef.on('child_added', function(data) {
-	message = data.val().message 
-	sender = data.val().sender
+	var message = data.val().message 
+	var sender = data.val().sender
+	var quick_reply = data.val().quick_reply;
+
+	console.log(quick_reply)
+
+	if (quick_reply === undefined) {
+		quick_reply = 'none';
+	}
+	else {
+		quick_reply = quick_reply.payload;
+	}
 
 	var exec = require('child_process').exec;
-	var cmd = 'python wit_client.py ' + sender + ' ' + message
+	var cmd = 'python3 wit_client.py ' + sender + ' ' + message + ' ' + quick_reply
 
 	console.log(cmd)
 
