@@ -2,7 +2,7 @@ import os
 
 SUPPORTED_SCENES = set(['bed', 'day', 'sex'])
 LIGHTS = {"my room": [1,2]}
-FANS = {"my room": ["192.168.0.37"]}
+FANS = {"my room": ["192.168.0.13"]}
 
 SCENES = {
 	"bed": {
