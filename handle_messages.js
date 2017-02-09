@@ -1,4 +1,5 @@
 var admin = require("firebase-admin");
+var fs = require("fs")
 
 admin.initializeApp({
 	credential: admin.credential.cert("firebase.json"),
@@ -11,19 +12,21 @@ var messageRef = db.ref('messages')
 messageRef.on('child_added', function(data) {
 	var message = data.val().message 
 	var sender = data.val().sender
-	var quick_reply = data.val().quick_reply;
 
-	console.log(quick_reply)
+	var filename = sender + ".json"
 
-	if (quick_reply === undefined) {
-		quick_reply = 'none';
-	}
-	else {
-		quick_reply = quick_reply.payload;
-	}
+	var requestObj = {"interface": "messenger",
+					"messenger_id": sender,
+					"message": message}
+
+	fs.writeFile(filename, JSON.stringify(requestObj), function (err) {
+  		if (err) throw err;
+	});
+
+	console.log(sender);
 
 	var exec = require('child_process').exec;
-	var cmd = 'python3 wit_client.py ' + sender + ' ' + message + ' ' + quick_reply
+	var cmd = 'python3 jarvis.py ' + filename
 
 	console.log(cmd)
 
